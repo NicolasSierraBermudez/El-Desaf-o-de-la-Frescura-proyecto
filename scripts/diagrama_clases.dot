@@ -1,0 +1,154 @@
+// Diagrama de Clases UML - Entidades del paquete model/ (ERP Frescura Total)
+// Render: dot -Tpng diagrama_clases.dot -o ../docs/diagrama_clases.png
+digraph Classes {
+    rankdir=TB;
+    graph [fontname="Helvetica", fontsize=18, label="Diagrama de Clases UML - Entidades de dominio (model/)\nERP Frescura Total - Autor: Nicolas Sierra Bermudez", labelloc="t", nodesep=0.6, ranksep=1.0];
+    node [shape=plaintext, fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9];
+
+    // ============ suppliers.model ============
+    Category [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D4EDDA">
+        <tr><td bgcolor="#28A745"><font color="white"><b>Category</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- name : String<br/>- description : String</td></tr>
+      </table>>];
+
+    Product [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D4EDDA">
+        <tr><td bgcolor="#28A745"><font color="white"><b>Product</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- name : String<br/>- description : String<br/>- categoryId : int<br/>- categoryName : String<br/>- unitOfMeasure : String<br/>- basePrice : BigDecimal</td></tr>
+      </table>>];
+
+    Supplier [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D4EDDA">
+        <tr><td bgcolor="#28A745"><font color="white"><b>Supplier</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- name : String<br/>- nit : String<br/>- contactPerson : String<br/>- email : String<br/>- phone : String<br/>- address : String<br/>- active : boolean<br/>- registrationDate : LocalDateTime</td></tr>
+      </table>>];
+
+    // ============ inventory.model ============
+    LotStatus [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#FFF3CD">
+        <tr><td bgcolor="#FFC107"><b>&laquo;enum&raquo; LotStatus</b></td></tr>
+        <tr><td align="left">AVAILABLE (1)<br/>NEAR_EXPIRY (2)<br/>EXPIRED (3)<br/>QUARANTINE (4)</td></tr>
+        <tr><td align="left">- id : int<br/>- displayName : String</td></tr>
+      </table>>];
+
+    Lot [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#CCE5FF">
+        <tr><td bgcolor="#007BFF"><font color="white"><b>Lot</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- lotNumber : String<br/>- productId : int<br/>- supplierId : int<br/>- entryDate : LocalDateTime<br/>- expirationDate : LocalDate<br/>- initialQuantity : BigDecimal<br/>- quantity : BigDecimal<br/>- purchasePrice : BigDecimal<br/>- salePrice : BigDecimal<br/>- aisle : String<br/>- shelf : String<br/>- statusId : int</td></tr>
+      </table>>];
+
+    QuarantineRecord [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#CCE5FF">
+        <tr><td bgcolor="#007BFF"><font color="white"><b>QuarantineRecord</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- lotId : int<br/>- reason : String<br/>- user : String<br/>- registrationDate : LocalDateTime<br/>- resolved : boolean<br/>- resolutionDate : LocalDateTime<br/>- resolutionNotes : String</td></tr>
+      </table>>];
+
+    QualityInspection [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#CCE5FF">
+        <tr><td bgcolor="#007BFF"><font color="white"><b>QualityInspection</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- lotId : int<br/>- inspectionDate : LocalDateTime<br/>- result : String<br/>- inspectorName : String<br/>- rejectionReason : String<br/>- notes : String</td></tr>
+      </table>>];
+
+    WasteRecord [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#CCE5FF">
+        <tr><td bgcolor="#007BFF"><font color="white"><b>WasteRecord</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- lotId : int<br/>- inspectionId : Integer<br/>- lostQuantity : BigDecimal<br/>- reason : String<br/>- registrationDate : LocalDateTime<br/>- registeredBy : String</td></tr>
+      </table>>];
+
+    // ============ sales.model ============
+    CustomerType [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>CustomerType</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- name : String<br/>- description : String</td></tr>
+      </table>>];
+
+    Customer [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>Customer</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- name : String<br/>- document : String<br/>- email : String<br/>- phone : String<br/>- address : String<br/>- typeId : int<br/>- typeName : String<br/>- registrationDate : LocalDateTime</td></tr>
+      </table>>];
+
+    Sale [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>Sale</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- saleNumber : String<br/>- customerId : int<br/>- saleDate : LocalDateTime<br/>- subtotal : BigDecimal<br/>- totalDiscount : BigDecimal<br/>- totalTax : BigDecimal<br/>- totalAmount : BigDecimal<br/>- statusId : int<br/>- registeredBy : String<br/>- details : List&lt;SaleDetail&gt;</td></tr>
+      </table>>];
+
+    SaleDetail [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>SaleDetail</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- saleId : int<br/>- lotId : int<br/>- quantitySold : BigDecimal<br/>- unitPrice : BigDecimal<br/>- discountRate : BigDecimal<br/>- discountAmount : BigDecimal<br/>- taxRate : BigDecimal<br/>- taxAmount : BigDecimal<br/>- subtotal : BigDecimal<br/>- lineTotal : BigDecimal</td></tr>
+      </table>>];
+
+    Invoice [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>Invoice</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- saleId : int<br/>- invoiceNumber : String<br/>- cufe : String<br/>- qrLink : String<br/>- issueDate : LocalDateTime<br/>- subtotal : BigDecimal<br/>- totalDiscount : BigDecimal<br/>- taxAmount : BigDecimal<br/>- totalAmount : BigDecimal</td></tr>
+      </table>>];
+
+    Promotion [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#F8D7DA">
+        <tr><td bgcolor="#DC3545"><font color="white"><b>Promotion</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- name : String<br/>- description : String<br/>- discountRate : BigDecimal<br/>- appliesLotStatusId : Integer<br/>- appliesCategoryId : Integer<br/>- active : boolean<br/>- startDate : LocalDate<br/>- endDate : LocalDate</td></tr>
+      </table>>];
+
+    // ============ logistics.model ============
+    Driver [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>Driver</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- name : String<br/>- licenseNumber : String<br/>- phone : String<br/>- email : String<br/>- active : boolean</td></tr>
+      </table>>];
+
+    Vehicle [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>Vehicle</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- plate : String<br/>- model : String<br/>- capacity : BigDecimal<br/>- status : String</td></tr>
+      </table>>];
+
+    DeliveryRoute [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>DeliveryRoute</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- routeName : String<br/>- creationDate : LocalDateTime<br/>- createdBy : String<br/>- estimatedDeparture : LocalDateTime<br/>- estimatedArrival : LocalDateTime<br/>- actualDeparture : LocalDateTime<br/>- actualArrival : LocalDateTime<br/>- status : String</td></tr>
+      </table>>];
+
+    DeliveryAssignment [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>DeliveryAssignment</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- routeId : int<br/>- vehicleId : int<br/>- driverId : int<br/>- assignmentDate : LocalDateTime<br/>- assignedBy : String<br/>- notes : String</td></tr>
+      </table>>];
+
+    RouteSale [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>RouteSale</b></font></td></tr>
+        <tr><td align="left">- id : int<br/>- routeId : int<br/>- saleId : int<br/>- deliveryOrder : Integer<br/>- destinationAddress : String<br/>- deliveryDate : LocalDateTime<br/>- receivedBy : String<br/>- observations : String</td></tr>
+      </table>>];
+
+    // ============ Asociaciones ============
+    // Composicion: Sale contiene SaleDetail (rombo relleno)
+    edge [arrowhead=none, arrowtail=diamond, dir=back];
+    Sale -> SaleDetail [taillabel="1", headlabel="*", label="details"];
+
+    // Asociaciones simples (flecha abierta de navegabilidad)
+    edge [arrowhead=vee, arrowtail=none, dir=forward, style=solid];
+    Product -> Category [label="categoryId"];
+    Lot -> Product [label="productId"];
+    Lot -> Supplier [label="supplierId"];
+    Lot -> LotStatus [label="statusId"];
+    QuarantineRecord -> Lot [label="lotId"];
+    QualityInspection -> Lot [label="lotId"];
+    WasteRecord -> Lot [label="lotId"];
+    WasteRecord -> QualityInspection [label="inspectionId 0..1"];
+    Promotion -> LotStatus [label="appliesLotStatusId 0..1"];
+    Promotion -> Category [label="appliesCategoryId 0..1"];
+    Customer -> CustomerType [label="typeId"];
+    Sale -> Customer [label="customerId"];
+    SaleDetail -> Lot [label="lotId"];
+    Invoice -> Sale [label="saleId"];
+    DeliveryAssignment -> DeliveryRoute [label="routeId"];
+    DeliveryAssignment -> Vehicle [label="vehicleId"];
+    DeliveryAssignment -> Driver [label="driverId"];
+    RouteSale -> DeliveryRoute [label="routeId"];
+    RouteSale -> Sale [label="saleId"];
+}

@@ -1,0 +1,75 @@
+package com.frescuratotal.erp.suppliers.controller;
+
+import com.frescuratotal.erp.common.DaoFactory;
+import com.frescuratotal.erp.inventory.model.Lot;
+import com.frescuratotal.erp.inventory.model.LotDao;
+import com.frescuratotal.erp.suppliers.model.Category;
+import com.frescuratotal.erp.suppliers.model.CategoryDao;
+import com.frescuratotal.erp.suppliers.model.Product;
+import com.frescuratotal.erp.suppliers.model.ProductDao;
+import com.frescuratotal.erp.suppliers.model.Supplier;
+import com.frescuratotal.erp.suppliers.model.SupplierDao;
+import com.frescuratotal.erp.suppliers.model.SupplierDaoImpl;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Controller for the suppliers &amp; purchases module (MVC: mediates between the
+ * console views and the DAO layer). Holds no SQL; delegates persistence to DAOs
+ * obtained from {@link DaoFactory} (DIP).
+ */
+public class SupplierController {
+
+    private final SupplierDao supplierDao = DaoFactory.supplierDao();
+    private final ProductDao productDao = DaoFactory.productDao();
+    private final LotDao lotDao = DaoFactory.lotDao();
+    private final CategoryDao categoryDao = new CategoryDao();
+
+    public int registerSupplier(Supplier s) {
+        return supplierDao.create(s);
+    }
+
+    public boolean updateSupplier(Supplier s) {
+        return supplierDao.update(s);
+    }
+
+    public List<Supplier> listSuppliers() {
+        return supplierDao.findAll();
+    }
+
+    public Supplier findSupplier(int id) {
+        return supplierDao.findById(id).orElse(null);
+    }
+
+    public int registerProduct(Product p) {
+        return productDao.create(p);
+    }
+
+    public List<Product> listProducts() {
+        return productDao.findAll();
+    }
+
+    public List<Category> listCategories() {
+        return categoryDao.findAll();
+    }
+
+    /** Links a product to a supplier's catalog ({@code productos_proveedor}). */
+    public void linkProductToSupplier(int supplierId, int productId) {
+        ((SupplierDaoImpl) supplierDao).linkProduct(supplierId, productId);
+    }
+
+    /** @return the products supplied by a supplier (catalog). */
+    public List<Product> productsOfSupplier(int supplierId) {
+        List<Integer> ids = ((SupplierDaoImpl) supplierDao).findProductIds(supplierId);
+        List<Product> result = new ArrayList<>();
+        for (Integer pid : ids) {
+            productDao.findById(pid).ifPresent(result::add);
+        }
+        return result;
+    }
+
+    /** @return the purchase history (lots received) for a supplier. */
+    public List<Lot> purchaseHistory(int supplierId) {
+        return lotDao.findBySupplier(supplierId);
+    }
+}

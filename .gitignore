@@ -1,0 +1,46 @@
+# ===== Compiled output / build artifacts =====
+target/
+build/
+dist/
+*.class
+
+# ===== Maven =====
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ===== NetBeans =====
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+.netbeans_automatic_build
+
+# ===== IntelliJ IDEA =====
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# ===== Eclipse =====
+.classpath
+.project
+.settings/
+bin/
+
+# ===== Runtime-generated output =====
+invoices/
+*.log
+
+# ===== OS files =====
+.DS_Store
+Thumbs.db
+
+# NOTE: docs/ (database.sql, diagrama_er.png, diagrama_clases.png) is intentionally tracked.

@@ -1,0 +1,260 @@
+// Diagrama Entidad-Relacion - ERP Frescura Total
+// Render: dot -Tpng diagrama_er.dot -o ../docs/diagrama_er.png
+digraph ER {
+    rankdir=LR;
+    graph [fontname="Helvetica", fontsize=18, label="Modelo Entidad-Relacion - ERP Frescura Total\n(Autor: Nicolas Sierra Bermudez)", labelloc="t", nodesep=0.5, ranksep=1.1, splines=true];
+    node [shape=plaintext, fontname="Helvetica", fontsize=10];
+    edge [fontname="Helvetica", fontsize=9, color="#555555"];
+
+    // ---------- Catalogos ----------
+    estados_lote [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#FFF3CD">
+        <tr><td bgcolor="#FFC107"><b>estados_lote</b></td></tr>
+        <tr><td align="left"><b>PK</b> id_estado</td></tr>
+        <tr><td align="left">nombre</td></tr>
+        <tr><td align="left">descripcion</td></tr>
+      </table>>];
+
+    tipos_cliente [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#FFF3CD">
+        <tr><td bgcolor="#FFC107"><b>tipos_cliente</b></td></tr>
+        <tr><td align="left"><b>PK</b> id_tipo</td></tr>
+        <tr><td align="left">nombre</td></tr>
+        <tr><td align="left">descripcion</td></tr>
+      </table>>];
+
+    estados_venta [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#FFF3CD">
+        <tr><td bgcolor="#FFC107"><b>estados_venta</b></td></tr>
+        <tr><td align="left"><b>PK</b> id_estado</td></tr>
+        <tr><td align="left">nombre</td></tr>
+        <tr><td align="left">descripcion</td></tr>
+      </table>>];
+
+    categorias_producto [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#FFF3CD">
+        <tr><td bgcolor="#FFC107"><b>categorias_producto</b></td></tr>
+        <tr><td align="left"><b>PK</b> id_categoria</td></tr>
+        <tr><td align="left">nombre</td></tr>
+        <tr><td align="left">descripcion</td></tr>
+      </table>>];
+
+    informacion_empresa [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#FFF3CD">
+        <tr><td bgcolor="#FFC107"><b>informacion_empresa</b></td></tr>
+        <tr><td align="left"><b>PK</b> id_empresa</td></tr>
+        <tr><td align="left">nombre_empresa</td></tr>
+        <tr><td align="left">nit</td></tr>
+        <tr><td align="left">direccion, ciudad</td></tr>
+        <tr><td align="left">telefono, email</td></tr>
+      </table>>];
+
+    // ---------- Entidades principales ----------
+    proveedores [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D4EDDA">
+        <tr><td bgcolor="#28A745"><font color="white"><b>proveedores</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_proveedor</td></tr>
+        <tr><td align="left">nombre</td></tr>
+        <tr><td align="left">nit (UNIQUE)</td></tr>
+        <tr><td align="left">persona_contacto</td></tr>
+        <tr><td align="left">email, telefono</td></tr>
+        <tr><td align="left">direccion, activo</td></tr>
+        <tr><td align="left">fecha_registro</td></tr>
+      </table>>];
+
+    productos [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D4EDDA">
+        <tr><td bgcolor="#28A745"><font color="white"><b>productos</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_producto</td></tr>
+        <tr><td align="left">nombre, descripcion</td></tr>
+        <tr><td align="left"><b>FK</b> id_categoria</td></tr>
+        <tr><td align="left">unidad_medida</td></tr>
+        <tr><td align="left">precio_base</td></tr>
+      </table>>];
+
+    productos_proveedor [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2E3E5">
+        <tr><td bgcolor="#6C757D"><font color="white"><b>productos_proveedor</b></font></td></tr>
+        <tr><td align="left"><b>PK/FK</b> id_proveedor</td></tr>
+        <tr><td align="left"><b>PK/FK</b> id_producto</td></tr>
+      </table>>];
+
+    lotes_inventario [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#CCE5FF">
+        <tr><td bgcolor="#007BFF"><font color="white"><b>lotes_inventario</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_lote</td></tr>
+        <tr><td align="left">numero_lote (UNIQUE)</td></tr>
+        <tr><td align="left"><b>FK</b> id_producto</td></tr>
+        <tr><td align="left"><b>FK</b> id_proveedor</td></tr>
+        <tr><td align="left">fecha_ingreso</td></tr>
+        <tr><td align="left">fecha_vencimiento</td></tr>
+        <tr><td align="left">cantidad_inicial, cantidad</td></tr>
+        <tr><td align="left">precio_compra, precio_venta</td></tr>
+        <tr><td align="left">pasillo, estante</td></tr>
+        <tr><td align="left"><b>FK</b> id_estado</td></tr>
+      </table>>];
+
+    registro_cuarentena [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#CCE5FF">
+        <tr><td bgcolor="#007BFF"><font color="white"><b>registro_cuarentena</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_registro</td></tr>
+        <tr><td align="left"><b>FK</b> id_lote</td></tr>
+        <tr><td align="left">motivo, usuario</td></tr>
+        <tr><td align="left">resuelta, fecha_resolucion</td></tr>
+        <tr><td align="left">notas_resolucion</td></tr>
+      </table>>];
+
+    inspecciones_calidad [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#CCE5FF">
+        <tr><td bgcolor="#007BFF"><font color="white"><b>inspecciones_calidad</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_inspeccion</td></tr>
+        <tr><td align="left"><b>FK</b> id_lote</td></tr>
+        <tr><td align="left">fecha_inspeccion</td></tr>
+        <tr><td align="left">resultado (ENUM)</td></tr>
+        <tr><td align="left">nombre_inspector</td></tr>
+        <tr><td align="left">motivo_rechazo, notas</td></tr>
+      </table>>];
+
+    registro_mermas [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#CCE5FF">
+        <tr><td bgcolor="#007BFF"><font color="white"><b>registro_mermas</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_registro</td></tr>
+        <tr><td align="left"><b>FK</b> id_lote</td></tr>
+        <tr><td align="left"><b>FK</b> id_inspeccion</td></tr>
+        <tr><td align="left">cantidad_perdida, motivo</td></tr>
+        <tr><td align="left">fecha_registro, usuario_registro</td></tr>
+      </table>>];
+
+    promociones [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#F8D7DA">
+        <tr><td bgcolor="#DC3545"><font color="white"><b>promociones</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_promocion</td></tr>
+        <tr><td align="left">nombre, descripcion</td></tr>
+        <tr><td align="left">tasa_descuento</td></tr>
+        <tr><td align="left"><b>FK</b> aplica_estado_lote</td></tr>
+        <tr><td align="left"><b>FK</b> aplica_categoria_producto</td></tr>
+        <tr><td align="left">activa, fecha_inicio, fecha_fin</td></tr>
+      </table>>];
+
+    clientes [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>clientes</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_cliente</td></tr>
+        <tr><td align="left">nombre, documento (UNIQUE)</td></tr>
+        <tr><td align="left">email, telefono, direccion</td></tr>
+        <tr><td align="left"><b>FK</b> id_tipo</td></tr>
+        <tr><td align="left">fecha_registro</td></tr>
+      </table>>];
+
+    ventas [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>ventas</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_venta</td></tr>
+        <tr><td align="left">numero_venta (UNIQUE)</td></tr>
+        <tr><td align="left"><b>FK</b> id_cliente</td></tr>
+        <tr><td align="left">fecha_venta</td></tr>
+        <tr><td align="left">subtotal, total_descuento</td></tr>
+        <tr><td align="left">total_impuesto, monto_total</td></tr>
+        <tr><td align="left"><b>FK</b> id_estado</td></tr>
+        <tr><td align="left">usuario_registro</td></tr>
+      </table>>];
+
+    detalles_venta [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>detalles_venta</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_detalle</td></tr>
+        <tr><td align="left"><b>FK</b> id_venta</td></tr>
+        <tr><td align="left"><b>FK</b> id_lote</td></tr>
+        <tr><td align="left">cantidad_vendida, precio_unitario</td></tr>
+        <tr><td align="left">descuento_aplicado, monto_descuento</td></tr>
+        <tr><td align="left">tasa_impuesto, monto_impuesto</td></tr>
+        <tr><td align="left">subtotal, total_linea</td></tr>
+      </table>>];
+
+    facturas [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#D1ECF1">
+        <tr><td bgcolor="#17A2B8"><font color="white"><b>facturas</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_factura</td></tr>
+        <tr><td align="left"><b>FK</b> id_venta</td></tr>
+        <tr><td align="left">numero_factura (UNIQUE)</td></tr>
+        <tr><td align="left">cufe (UNIQUE), enlace_qr</td></tr>
+        <tr><td align="left">fecha_emision</td></tr>
+        <tr><td align="left">subtotal, total_descuento</td></tr>
+        <tr><td align="left">monto_impuesto, monto_total</td></tr>
+      </table>>];
+
+    conductores [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>conductores</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_conductor</td></tr>
+        <tr><td align="left">nombre</td></tr>
+        <tr><td align="left">numero_licencia (UNIQUE)</td></tr>
+        <tr><td align="left">telefono, email, activo</td></tr>
+      </table>>];
+
+    vehiculos [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>vehiculos</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_vehiculo</td></tr>
+        <tr><td align="left">placa (UNIQUE)</td></tr>
+        <tr><td align="left">modelo, capacidad</td></tr>
+        <tr><td align="left">estado (ENUM)</td></tr>
+      </table>>];
+
+    rutas_entrega [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>rutas_entrega</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_ruta</td></tr>
+        <tr><td align="left">nombre_ruta, fecha_creacion</td></tr>
+        <tr><td align="left">usuario_creacion</td></tr>
+        <tr><td align="left">hora_salida/llegada (est/real)</td></tr>
+        <tr><td align="left">estado (ENUM)</td></tr>
+      </table>>];
+
+    asignaciones_entrega [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>asignaciones_entrega</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id_asignacion</td></tr>
+        <tr><td align="left"><b>FK</b> id_ruta</td></tr>
+        <tr><td align="left"><b>FK</b> id_vehiculo</td></tr>
+        <tr><td align="left"><b>FK</b> id_conductor</td></tr>
+        <tr><td align="left">fecha_asignacion</td></tr>
+        <tr><td align="left">usuario_asignacion, notas</td></tr>
+      </table>>];
+
+    ventas_ruta [label=<
+      <table border="0" cellborder="1" cellspacing="0" bgcolor="#E2D9F3">
+        <tr><td bgcolor="#6F42C1"><font color="white"><b>ventas_ruta</b></font></td></tr>
+        <tr><td align="left"><b>PK</b> id</td></tr>
+        <tr><td align="left"><b>FK</b> id_ruta</td></tr>
+        <tr><td align="left"><b>FK</b> id_venta</td></tr>
+        <tr><td align="left">orden_entrega, direccion_destino</td></tr>
+        <tr><td align="left">fecha_entrega, recibido_por</td></tr>
+        <tr><td align="left">observaciones</td></tr>
+      </table>>];
+
+    // ---------- Relaciones (cardinalidad 1 : N) ----------
+    categorias_producto -> productos [headlabel="N", taillabel="1"];
+    proveedores -> productos_proveedor [headlabel="N", taillabel="1"];
+    productos -> productos_proveedor [headlabel="N", taillabel="1"];
+    productos -> lotes_inventario [headlabel="N", taillabel="1"];
+    proveedores -> lotes_inventario [headlabel="N", taillabel="1"];
+    estados_lote -> lotes_inventario [headlabel="N", taillabel="1"];
+    lotes_inventario -> registro_cuarentena [headlabel="N", taillabel="1"];
+    lotes_inventario -> inspecciones_calidad [headlabel="N", taillabel="1"];
+    lotes_inventario -> registro_mermas [headlabel="N", taillabel="1"];
+    inspecciones_calidad -> registro_mermas [headlabel="N", taillabel="0..1"];
+    estados_lote -> promociones [headlabel="N", taillabel="0..1"];
+    categorias_producto -> promociones [headlabel="N", taillabel="0..1"];
+    tipos_cliente -> clientes [headlabel="N", taillabel="1"];
+    clientes -> ventas [headlabel="N", taillabel="1"];
+    estados_venta -> ventas [headlabel="N", taillabel="1"];
+    ventas -> detalles_venta [headlabel="N", taillabel="1"];
+    lotes_inventario -> detalles_venta [headlabel="N", taillabel="1"];
+    ventas -> facturas [headlabel="N", taillabel="1"];
+    rutas_entrega -> asignaciones_entrega [headlabel="N", taillabel="1"];
+    vehiculos -> asignaciones_entrega [headlabel="N", taillabel="1"];
+    conductores -> asignaciones_entrega [headlabel="N", taillabel="1"];
+    rutas_entrega -> ventas_ruta [headlabel="N", taillabel="1"];
+    ventas -> ventas_ruta [headlabel="N", taillabel="1"];
+}
