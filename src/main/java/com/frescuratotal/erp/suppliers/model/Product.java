@@ -11,12 +11,19 @@ import java.math.BigDecimal;
  */
 public class Product {
 
+    /** Unique product identifier (primary key). */
     private int id;
+    /** Product name. */
     private String name;
+    /** Free-text product description. */
     private String description;
+    /** Identifier of the product category. */
     private int categoryId;
+    /** Category name, populated by joins. */
     private String categoryName; // convenience field populated by joins
+    /** Unit used to measure the product (e.g. kg, unit). */
     private String unitOfMeasure;
+    /** Reference base price of the product. */
     private BigDecimal basePrice;
 
     public Product() {

@@ -16,23 +16,39 @@ import java.time.LocalDateTime;
  */
 public class Lot {
 
+    /** Unique lot identifier (primary key). */
     private int id;
+    /** Human-readable lot code assigned on reception. */
     private String lotNumber;
+    /** Identifier of the product this lot belongs to. */
     private int productId;
+    /** Identifier of the supplier that delivered the lot. */
     private int supplierId;
+    /** Date and time when the lot entered the warehouse. */
     private LocalDateTime entryDate;
+    /** Date on which the lot expires. */
     private LocalDate expirationDate;
+    /** Quantity received when the lot was registered. */
     private BigDecimal initialQuantity;
+    /** Quantity currently available in stock. */
     private BigDecimal quantity;
+    /** Unit price paid to the supplier. */
     private BigDecimal purchasePrice;
+    /** Unit price charged to customers. */
     private BigDecimal salePrice;
+    /** Warehouse aisle where the lot is stored. */
     private String aisle;
+    /** Shelf within the aisle where the lot is stored. */
     private String shelf;
+    /** Identifier of the current lot status. */
     private int statusId;
 
     // Convenience fields populated by joins (not persisted directly).
+    /** Product name, populated by joins. */
     private String productName;
+    /** Supplier name, populated by joins. */
     private String supplierName;
+    /** Status name, populated by joins. */
     private String statusName;
 
     public int getId() {

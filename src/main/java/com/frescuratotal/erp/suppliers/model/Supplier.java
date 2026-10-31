@@ -12,14 +12,23 @@ import java.time.LocalDateTime;
  */
 public class Supplier {
 
+    /** Unique supplier identifier (primary key). */
     private int id;
+    /** Supplier business name. */
     private String name;
+    /** Tax identification number (NIT) of the supplier. */
     private String nit;
+    /** Name of the main contact person. */
     private String contactPerson;
+    /** Contact email address. */
     private String email;
+    /** Contact phone number. */
     private String phone;
+    /** Physical address of the supplier. */
     private String address;
+    /** Whether the supplier is currently active. */
     private boolean active = true;
+    /** Date and time when the supplier was registered. */
     private LocalDateTime registrationDate;
 
     public Supplier() {
