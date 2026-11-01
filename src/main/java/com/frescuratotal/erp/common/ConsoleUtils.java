@@ -46,7 +46,7 @@ public final class ConsoleUtils {
             try {
                 return Integer.parseInt(raw);
             } catch (NumberFormatException ex) {
-                System.out.println("  * Ingrese un numero entero valido.");
+                System.out.println("  * Error: ingrese un número entero válido.");
             }
         }
     }
@@ -69,7 +69,7 @@ public final class ConsoleUtils {
             try {
                 return new BigDecimal(raw);
             } catch (NumberFormatException ex) {
-                System.out.println("  * Ingrese un numero valido (ej: 1500.00).");
+                System.out.println("  * Error: ingrese un número válido (ej: 1500.00).");
             }
         }
     }
