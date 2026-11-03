@@ -299,6 +299,18 @@ lo genera.
 
 ---
 
+## Historial de versiones
+
+| Fecha | Cambio |
+|-------|--------|
+| 2026-10-30 | Versión inicial con los cuatro módulos y creación del CHANGELOG. |
+| 2026-10-31 | Javadoc en las entidades `Lot`, `Product` y `Supplier`. |
+| 2026-11-01 | Validaciones numéricas con mensajes en español. |
+| 2026-11-02 | Stream API, lambdas, logging a archivo y uniformización de mensajes. |
+| 2026-11-03 | Entrega final: CHANGELOG y README actualizados. |
+
+Consulta el detalle completo en [CHANGELOG.md](CHANGELOG.md).
+
 ## Licencia
 
 Proyecto académico desarrollado por Nicolás Sierra Bermúdez. Uso educativo.

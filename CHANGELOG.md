@@ -2,6 +2,16 @@
 
 Todos los cambios relevantes de **ERP Frescura Total** se documentan en este archivo.
 
+## [Refinamientos] - 2026-11-03
+
+Commit final de entrega. Resumen de los refinamientos realizados durante la semana:
+
+- **30 oct**: se creó el `CHANGELOG.md` con la descripción de los cuatro módulos (Inventario, Proveedores, Ventas, Logística).
+- **31 oct**: se añadió Javadoc a los campos de las entidades `Lot`, `Product` y `Supplier`.
+- **1 nov**: mensajes de validación numérica en español en `ConsoleUtils`.
+- **2 nov**: uniformización de mensajes de consola en español, Stream API y lambdas en la lógica de negocio, y logging a archivo (`AppLogger`).
+- **3 nov**: actualización final del CHANGELOG y de la sección "Historial de versiones" del README.
+
 ## [Mejoras] - 2026-11-02
 
 ### Programación funcional y Stream API
