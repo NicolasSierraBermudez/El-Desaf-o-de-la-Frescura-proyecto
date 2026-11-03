@@ -1,5 +1,6 @@
 package com.frescuratotal.erp.suppliers.controller;
 
+import com.frescuratotal.erp.common.AppLogger;
 import com.frescuratotal.erp.common.DaoFactory;
 import com.frescuratotal.erp.inventory.model.Lot;
 import com.frescuratotal.erp.inventory.model.LotDao;
@@ -10,8 +11,9 @@ import com.frescuratotal.erp.suppliers.model.ProductDao;
 import com.frescuratotal.erp.suppliers.model.Supplier;
 import com.frescuratotal.erp.suppliers.model.SupplierDao;
 import com.frescuratotal.erp.suppliers.model.SupplierDaoImpl;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the suppliers &amp; purchases module (MVC: mediates between the
@@ -26,7 +28,9 @@ public class SupplierController {
     private final CategoryDao categoryDao = new CategoryDao();
 
     public int registerSupplier(Supplier s) {
-        return supplierDao.create(s);
+        int id = supplierDao.create(s);
+        AppLogger.info("Proveedor registrado: " + s.getName() + " (id=" + id + ")");
+        return id;
     }
 
     public boolean updateSupplier(Supplier s) {
@@ -58,14 +62,31 @@ public class SupplierController {
         ((SupplierDaoImpl) supplierDao).linkProduct(supplierId, productId);
     }
 
-    /** @return the products supplied by a supplier (catalog). */
+    /**
+     * @return the products supplied by a supplier (catalog).
+     *
+     * <p>Resolves the catalog ids into products with a Stream pipeline:
+     * {@code map(productDao::findById).flatMap(Optional::stream)}.</p>
+     */
     public List<Product> productsOfSupplier(int supplierId) {
-        List<Integer> ids = ((SupplierDaoImpl) supplierDao).findProductIds(supplierId);
-        List<Product> result = new ArrayList<>();
-        for (Integer pid : ids) {
-            productDao.findById(pid).ifPresent(result::add);
-        }
-        return result;
+        return ((SupplierDaoImpl) supplierDao).findProductIds(supplierId).stream()
+                .map(productDao::findById)
+                .flatMap(java.util.Optional::stream)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Report: counts how many products exist per category name, using the Stream
+     * API with {@link Collectors#groupingBy} + {@link Collectors#counting}.
+     *
+     * @return a map {category name -> number of products}
+     */
+    public Map<String, Long> countProductsByCategory() {
+        return productDao.findAll().stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getCategoryName() != null
+                                ? p.getCategoryName() : ("Categoria " + p.getCategoryId()),
+                        Collectors.counting()));
     }
 
     /** @return the purchase history (lots received) for a supplier. */

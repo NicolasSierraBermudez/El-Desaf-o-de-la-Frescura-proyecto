@@ -1,5 +1,6 @@
 package com.frescuratotal.erp.inventory.controller;
 
+import com.frescuratotal.erp.common.AppLogger;
 import com.frescuratotal.erp.common.DaoFactory;
 import com.frescuratotal.erp.common.NumberGenerator;
 import com.frescuratotal.erp.inventory.model.InspectionDao;
@@ -17,8 +18,10 @@ import com.frescuratotal.erp.sales.model.SaleDao;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the inventory &amp; quality module (the central module).
@@ -61,6 +64,9 @@ public class InventoryController {
         lot.setShelf(shelf);
         lot.setStatusId(LotStatus.AVAILABLE.getId());
         lotDao.create(lot);
+        AppLogger.info("Recepcion registrada: lote " + lot.getLotNumber()
+                + " producto=" + productId + " proveedor=" + supplierId
+                + " cantidad=" + quantity);
         return lot;
     }
 
@@ -90,13 +96,77 @@ public class InventoryController {
         return l != null ? l.getQuantity() : null;
     }
 
-    /** @return customers that received products from a given lot. */
+    /**
+     * @return customers that received products from a given lot.
+     *
+     * <p>Uses the Stream API with a method reference ({@code customerDao::findById})
+     * and {@link java.util.Optional#stream()} to turn the list of customer ids into
+     * a flat list of resolved customers, skipping ids that no longer exist.</p>
+     */
     public List<Customer> customersOfLot(int lotId) {
-        List<Customer> customers = new ArrayList<>();
-        for (Integer cid : saleDao.findCustomerIdsByLot(lotId)) {
-            customerDao.findById(cid).ifPresent(customers::add);
-        }
-        return customers;
+        return saleDao.findCustomerIdsByLot(lotId).stream()
+                .map(customerDao::findById)
+                .flatMap(java.util.Optional::stream)
+                .collect(Collectors.toList());
+    }
+
+    // ---------------- Stream-based inventory reports ----------------
+
+    /**
+     * Builds a report of how many lots exist in each status.
+     *
+     * <p>Demonstrates {@link java.util.stream.Collectors#groupingBy} +
+     * {@link java.util.stream.Collectors#counting} with a lambda classifier that
+     * maps every lot to its {@link LotStatus}.</p>
+     *
+     * @return an ordered map {status -> number of lots}
+     */
+    public Map<LotStatus, Long> countLotsByStatus() {
+        return lotDao.findAll().stream()
+                .collect(Collectors.groupingBy(
+                        lot -> LotStatus.fromId(lot.getStatusId()),
+                        Collectors.counting()));
+    }
+
+    /**
+     * Lists the lots that will expire within the given number of days and still
+     * hold stock, sorted by nearest expiration first (FEFO order).
+     *
+     * <p>Combines a {@link Predicate} lambda in {@code filter(...)} with
+     * {@code sorted(Comparator.comparing(Lot::getExpirationDate))}.</p>
+     */
+    public List<Lot> lotsExpiringWithin(int days) {
+        LocalDate limit = LocalDate.now().plusDays(days);
+        Predicate<Lot> expiresSoon = lot -> lot.getExpirationDate() != null
+                && !lot.getExpirationDate().isAfter(limit)
+                && lot.getQuantity() != null
+                && lot.getQuantity().signum() > 0;
+        return lotDao.findAll().stream()
+                .filter(expiresSoon)
+                .sorted(java.util.Comparator.comparing(Lot::getExpirationDate))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Computes the total value of the current stock (sale price x quantity) across
+     * all lots using {@code map(...).reduce(...)} over the Stream API.
+     */
+    public BigDecimal totalStockValue() {
+        return lotDao.findAll().stream()
+                .filter(lot -> lot.getSalePrice() != null && lot.getQuantity() != null)
+                .map(lot -> lot.getSalePrice().multiply(lot.getQuantity()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Sums the total wasted units recorded so far using a Stream pipeline
+     * ({@code map(WasteRecord::getLostQuantity).reduce(...)}).
+     */
+    public BigDecimal totalWasteUnits() {
+        return wasteDao.findAll().stream()
+                .map(WasteRecord::getLostQuantity)
+                .filter(q -> q != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     // ---------------- Daily review job ----------------
@@ -110,34 +180,45 @@ public class InventoryController {
      * @return a human-readable summary of the changes applied
      */
     public String runDailyReview() {
-        int nearCount = 0;
-        int expiredCount = 0;
         LocalDate today = LocalDate.now();
-        for (Lot lot : lotDao.findAll()) {
-            // Never auto-change lots under quarantine.
-            if (lot.getStatusId() == LotStatus.QUARANTINE.getId()) {
-                continue;
-            }
-            LocalDate exp = lot.getExpirationDate();
-            if (exp == null) {
-                continue;
-            }
-            long daysToExpire = ChronoUnit.DAYS.between(today, exp);
-            if (daysToExpire < 0) {
-                if (lot.getStatusId() != LotStatus.EXPIRED.getId()) {
-                    lotDao.updateStatus(lot.getId(), LotStatus.EXPIRED.getId());
-                    expiredCount++;
-                }
-            } else if (daysToExpire <= NEAR_EXPIRY_DAYS) {
-                if (lot.getStatusId() == LotStatus.AVAILABLE.getId()) {
-                    lotDao.updateStatus(lot.getId(), LotStatus.NEAR_EXPIRY.getId());
-                    nearCount++;
-                }
-            }
-        }
-        return String.format(
+
+        // Predicate lambda: a lot is eligible for an automatic status change only if
+        // it has an expiration date and is not under quarantine.
+        Predicate<Lot> reviewable = lot ->
+                lot.getExpirationDate() != null
+                        && lot.getStatusId() != LotStatus.QUARANTINE.getId();
+
+        List<Lot> reviewableLots = lotDao.findAll().stream()
+                .filter(reviewable)
+                .collect(Collectors.toList());
+
+        // Stream + filter: lots already past their expiration date that are not
+        // flagged as expired yet.
+        List<Lot> toExpire = reviewableLots.stream()
+                .filter(lot -> ChronoUnit.DAYS.between(today, lot.getExpirationDate()) < 0)
+                .filter(lot -> lot.getStatusId() != LotStatus.EXPIRED.getId())
+                .collect(Collectors.toList());
+
+        // Stream + filter: available lots whose expiration falls inside the warning
+        // window become "Proximo a Vencer".
+        List<Lot> toNearExpiry = reviewableLots.stream()
+                .filter(lot -> {
+                    long days = ChronoUnit.DAYS.between(today, lot.getExpirationDate());
+                    return days >= 0 && days <= NEAR_EXPIRY_DAYS;
+                })
+                .filter(lot -> lot.getStatusId() == LotStatus.AVAILABLE.getId())
+                .collect(Collectors.toList());
+
+        // Consumer via method/lambda applied over the stream to persist the change.
+        toExpire.forEach(lot -> lotDao.updateStatus(lot.getId(), LotStatus.EXPIRED.getId()));
+        toNearExpiry.forEach(lot -> lotDao.updateStatus(lot.getId(), LotStatus.NEAR_EXPIRY.getId()));
+
+        String summary = String.format(
                 "Revision diaria completada. Lotes marcados Proximo a Vencer: %d | Vencidos: %d",
-                nearCount, expiredCount);
+                toNearExpiry.size(), toExpire.size());
+        AppLogger.info("Revision diaria ejecutada. Proximo a Vencer=" + toNearExpiry.size()
+                + " Vencidos=" + toExpire.size());
+        return summary;
     }
 
     // ---------------- Quarantine ----------------
@@ -150,6 +231,7 @@ public class InventoryController {
         q.setUser(user);
         quarantineDao.create(q);
         lotDao.updateStatus(lotId, LotStatus.QUARANTINE.getId());
+        AppLogger.info("Lote " + lotId + " enviado a cuarentena. Motivo: " + reason);
     }
 
     public List<QuarantineRecord> listQuarantines() {
@@ -186,6 +268,8 @@ public class InventoryController {
         if (approved) {
             lotDao.updateStatus(lotId, LotStatus.AVAILABLE.getId());
             quarantineDao.resolveByLot(lotId, "Aprobado por inspeccion #" + inspId);
+            AppLogger.info("Inspeccion #" + inspId + " APROBADA para lote " + lotId
+                    + " por " + inspector);
             return "Inspeccion APROBADA. El lote vuelve a estado Disponible.";
         } else {
             BigDecimal remaining = lot.getQuantity() != null ? lot.getQuantity() : BigDecimal.ZERO;
@@ -200,6 +284,8 @@ public class InventoryController {
             lotDao.updateQuantity(lotId, BigDecimal.ZERO);
             quarantineDao.resolveByLot(lotId, "Rechazado por inspeccion #" + inspId);
             lotDao.updateStatus(lotId, LotStatus.EXPIRED.getId());
+            AppLogger.warning("Inspeccion #" + inspId + " RECHAZADA para lote " + lotId
+                    + ". Merma de " + remaining + " unidades.");
             return "Inspeccion RECHAZADA. Se genero merma por " + remaining
                     + " unidades y se bloqueo el lote.";
         }
@@ -233,6 +319,8 @@ public class InventoryController {
         waste.setRegisteredBy(user);
         wasteDao.create(waste);
         lotDao.updateQuantity(lotId, current.subtract(quantity));
+        AppLogger.info("Merma manual registrada en lote " + lotId + ": " + quantity
+                + " unidades. Motivo: " + reason);
         return "Merma registrada. Unidades restantes del lote: " + current.subtract(quantity);
     }
 

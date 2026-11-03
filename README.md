@@ -147,6 +147,7 @@ com/frescuratotal/erp/
 │   ├── DaoException            (excepción de capa de datos)
 │   ├── NumberGenerator         (números de lote / venta / factura)
 │   ├── ConsoleUtils            (entrada/salida de consola)
+│   ├── AppLogger               (logging a archivo logs/erp.log)
 │   ├── CompanyInfo / CompanyInfoDao
 │   └── invoice/                (generación de factura: Factory PNG/PDF, QR, CUFE)
 │
@@ -193,7 +194,9 @@ El diseño aplica los cinco principios SOLID de forma transversal. El **Principi
 Responsabilidad Única (SRP)** se refleja en la separación MVC: los *models* representan datos
 y reglas de la entidad, los *controllers* orquestan los casos de uso y los *views* solo se
 ocupan de la interacción por consola; ninguna clase mezcla acceso a datos con lógica de
-presentación. El **Principio de Inversión de Dependencias (DIP)** y el **Principio de
+presentación. El registro de eventos también respeta SRP al quedar centralizado en una única
+utilidad (`AppLogger`), de modo que los controladores no se ocupan de cómo ni dónde se escribe
+la bitácora. El **Principio de Inversión de Dependencias (DIP)** y el **Principio de
 Sustitución de Liskov (LSP)** se materializan en la capa DAO: los controladores dependen de
 **interfaces** (`SupplierDao`, `LotDao`, `SaleDao`, …), no de las implementaciones JDBC
 concretas, de modo que cualquier implementación que respete el contrato es intercambiable.
@@ -237,6 +240,62 @@ solicitado, qué generador de documento instanciar (`PngInvoiceGenerator` o
 Esto permite ofrecer la **factura con un clic en PNG y PDF** (con QR y CUFE simulado) y, en el
 futuro, agregar nuevos formatos sin modificar el código que solicita la factura — una
 combinación directa de los patrones Factory y Open/Closed.
+
+---
+
+## Programación funcional y manejo de logs
+
+### Stream API y expresiones lambda
+
+La lógica de negocio de los controladores aprovecha de forma intensiva la **Stream API** y las
+**expresiones lambda** de Java, además de las interfaces funcionales estándar (`Predicate`,
+`Function`, `Comparator`, `Consumer`). Algunos ejemplos reales dentro del código:
+
+- **Inventario (`InventoryController`)**:
+  - `runDailyReview()` clasifica los lotes con `stream().filter(...)` usando un `Predicate`
+    para separar los que deben marcarse *Vencido* o *Próximo a Vencer*, y aplica el cambio con
+    `forEach(...)`.
+  - `countLotsByStatus()` agrupa y cuenta los lotes por estado con
+    `Collectors.groupingBy(...)` + `Collectors.counting()`.
+  - `lotsExpiringWithin(dias)` filtra por fecha y ordena en modo FEFO con
+    `sorted(Comparator.comparing(Lot::getExpirationDate))`.
+  - `totalStockValue()` y `totalWasteUnits()` agregan valores con `map(...).reduce(...)`.
+- **Ventas (`SalesController`)**:
+  - `suggestFefoLot(...)` selecciona el lote que primero vence con
+    `min(Comparator.comparing(Lot::getExpirationDate))` (regla FEFO explícita).
+  - `confirmSale(...)` calcula subtotal, descuentos, IVA y total con un helper funcional
+    `sumBy(..., SaleDetail::getLineTotal)` basado en `map(...).reduce(...)`.
+  - `totalSalesAmount()` y `countSalesByStatus()` producen reportes agregados por streams.
+- **Proveedores (`SupplierController`)**: `productsOfSupplier(...)` resuelve el catálogo con
+  `map(productDao::findById).flatMap(Optional::stream)`, y `countProductsByCategory()` agrupa
+  productos por categoría.
+- **Logística (`LogisticsController`)**: `completeRoute(...)` marca y cuenta las ventas
+  entregadas con `filter(...).count()`, y `pendingDispatchValue()` suma el valor pendiente de
+  despacho con `map(Sale::getTotalAmount).reduce(...)`.
+
+Estos reportes son visibles para el usuario en las nuevas opciones de menú **"Reporte de
+inventario"** y **"Reporte de ventas"**.
+
+### Manejo de archivos y registro de eventos (logging)
+
+La clase **`com.frescuratotal.erp.common.AppLogger`** centraliza el registro de eventos a
+**archivo** usando `java.util.logging` sobre un `FileHandler` en modo *append*. La bitácora se
+guarda en **`logs/erp.log`**; la carpeta `logs/` se crea automáticamente con `java.nio.file.Files`
+si no existe. Cada línea incluye **marca de tiempo y nivel** (`INFO`, `WARNING`, `SEVERE`), por
+ejemplo:
+
+```
+[2026-11-02 09:15:04] INFO    Venta confirmada: V-000123 cliente=12 lineas=3 total=85000.00
+[2026-11-02 09:16:40] WARNING Inspeccion #7 RECHAZADA para lote 55. Merma de 20 unidades.
+```
+
+Se registran las operaciones clave del negocio: recepción y loteo de mercancía, cambios de
+estado del *job* de revisión diaria, cuarentenas, inspecciones y mermas, confirmación de
+ventas, generación de facturas, creación y cierre de rutas, y los **errores de base de datos**
+capturados en los módulos. `AppLogger` también ofrece `tail(n)` para leer las últimas líneas
+del archivo con `java.nio.file.Files` (lectura de archivos). El archivo `logs/erp.log` está
+excluido del control de versiones (ver `.gitignore`); lo que se versiona es el **código** que
+lo genera.
 
 ---
 

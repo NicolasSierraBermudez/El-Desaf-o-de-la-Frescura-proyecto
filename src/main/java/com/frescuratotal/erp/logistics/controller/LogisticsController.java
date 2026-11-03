@@ -1,5 +1,6 @@
 package com.frescuratotal.erp.logistics.controller;
 
+import com.frescuratotal.erp.common.AppLogger;
 import com.frescuratotal.erp.common.DaoFactory;
 import com.frescuratotal.erp.logistics.model.DeliveryAssignment;
 import com.frescuratotal.erp.logistics.model.DeliveryAssignmentDao;
@@ -14,6 +15,7 @@ import com.frescuratotal.erp.logistics.model.Vehicle;
 import com.frescuratotal.erp.logistics.model.VehicleDao;
 import com.frescuratotal.erp.sales.model.Sale;
 import com.frescuratotal.erp.sales.model.SaleDao;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -75,6 +77,17 @@ public class LogisticsController {
         return saleDao.findByStatus(Sale.STATUS_IN_TRANSIT);
     }
 
+    /**
+     * Report: total monetary value of the sales currently waiting to be dispatched.
+     * Uses a Stream pipeline ({@code map(Sale::getTotalAmount).reduce(...)}).
+     */
+    public BigDecimal pendingDispatchValue() {
+        return dispatchPanel().stream()
+                .map(Sale::getTotalAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     // ---------------- Routes ----------------
 
     public List<DeliveryRoute> listRoutes() {
@@ -117,6 +130,9 @@ public class LogisticsController {
             // The sale is now loaded in the route and leaves the warehouse.
             saleDao.updateStatus(sale.getId(), Sale.STATUS_IN_TRANSIT);
         }
+        AppLogger.info("Ruta creada: " + routeName + " (id=" + route.getId()
+                + ") vehiculo=" + vehicleId + " conductor=" + driverId
+                + " ventas=" + sales.size());
         return route;
     }
 
@@ -144,15 +160,16 @@ public class LogisticsController {
      * @return the number of sales marked as delivered
      */
     public int completeRoute(int routeId) {
-        int delivered = 0;
-        for (RouteSale rs : routeSaleDao.findByRoute(routeId)) {
-            if (saleDao.updateStatus(rs.getSaleId(), Sale.STATUS_DELIVERED)) {
-                delivered++;
-            }
-        }
+        // Stream API: mark every linked sale as delivered and count the successes
+        // via filter + count, replacing the manual accumulator loop.
+        long delivered = routeSaleDao.findByRoute(routeId).stream()
+                .map(RouteSale::getSaleId)
+                .filter(saleId -> saleDao.updateStatus(saleId, Sale.STATUS_DELIVERED))
+                .count();
         ((DeliveryRouteDaoImpl) routeDao)
                 .updateStatus(routeId, DeliveryRoute.STATUS_COMPLETED);
-        return delivered;
+        AppLogger.info("Ruta " + routeId + " completada. Ventas entregadas=" + delivered);
+        return (int) delivered;
     }
 
     public boolean cancelRoute(int routeId) {

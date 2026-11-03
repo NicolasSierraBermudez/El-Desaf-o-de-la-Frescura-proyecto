@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Console view for the sales &amp; billing module. Presentation only; business
@@ -33,8 +34,9 @@ public class SalesView {
             System.out.println("4. Listar ventas");
             System.out.println("5. Ver detalle de una venta");
             System.out.println("6. Generar factura electronica (PNG + PDF)");
+            System.out.println("7. Reporte de ventas (resumen con Stream API)");
             System.out.println("0. Volver al menu principal");
-            int option = ConsoleUtils.readInt("Seleccione una opcion: ", 0, 6);
+            int option = ConsoleUtils.readInt("Seleccione una opcion: ", 0, 7);
             try {
                 switch (option) {
                     case 1: registerCustomer(); break;
@@ -43,6 +45,7 @@ public class SalesView {
                     case 4: listSales(); break;
                     case 5: saleDetail(); break;
                     case 6: generateInvoice(); break;
+                    case 7: salesReport(); break;
                     case 0: back = true; break;
                     default: break;
                 }
@@ -210,5 +213,24 @@ public class SalesView {
         } catch (RuntimeException ex) {
             System.out.println("No se pudo generar la factura: " + ex.getMessage());
         }
+    }
+
+    /**
+     * Sales summary report fed by Stream-based aggregations in the controller
+     * (total billed amount and number of sales grouped by status).
+     */
+    private void salesReport() {
+        System.out.println("\n--- Reporte de ventas (resumen) ---");
+        System.out.printf(">> Monto total facturado: $%s%n", controller.totalSalesAmount());
+        System.out.println(">> Ventas por estado:");
+        Map<String, Long> byStatus = controller.countSalesByStatus();
+        if (byStatus.isEmpty()) {
+            System.out.println("   (sin ventas registradas)");
+        } else {
+            // forEach with a lambda over the grouped report.
+            byStatus.forEach((status, count) ->
+                    System.out.printf("   %-20s : %d venta(s)%n", status, count));
+        }
+        ConsoleUtils.pause();
     }
 }

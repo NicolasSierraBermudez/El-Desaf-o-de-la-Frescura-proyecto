@@ -1,5 +1,6 @@
 package com.frescuratotal.erp.sales.controller;
 
+import com.frescuratotal.erp.common.AppLogger;
 import com.frescuratotal.erp.common.CompanyInfo;
 import com.frescuratotal.erp.common.CompanyInfoDao;
 import com.frescuratotal.erp.common.DaoFactory;
@@ -31,8 +32,11 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Controller for the sales &amp; billing module.
@@ -89,10 +93,45 @@ public class SalesController {
         return lotDao.findAvailableByProductFefo(productId);
     }
 
-    /** @return the FEFO-suggested lot for a product, or null if none available. */
+    /**
+     * @return the FEFO-suggested lot for a product, or null if none available.
+     *
+     * <p>Even though the DAO already returns lots in FEFO order, the selection is
+     * re-expressed here with the Stream API and a {@link Comparator} so the FEFO
+     * rule (earliest {@code expirationDate} first) is explicit and testable at the
+     * business layer: {@code Comparator.comparing(Lot::getExpirationDate)}.</p>
+     */
     public Lot suggestFefoLot(int productId) {
-        List<Lot> lots = availableLotsFefo(productId);
-        return lots.isEmpty() ? null : lots.get(0);
+        return availableLotsFefo(productId).stream()
+                .filter(lot -> lot.getQuantity() != null && lot.getQuantity().signum() > 0)
+                .min(Comparator.comparing(Lot::getExpirationDate))
+                .orElse(null);
+    }
+
+    // ---------------- Stream-based sales reports ----------------
+
+    /**
+     * Sums the total billed amount across every sale using
+     * {@code map(Sale::getTotalAmount).reduce(...)} over the Stream API.
+     */
+    public BigDecimal totalSalesAmount() {
+        return saleDao.findAll().stream()
+                .map(Sale::getTotalAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Counts how many sales are in each status name, using
+     * {@link Collectors#groupingBy} + {@link Collectors#counting} with a lambda
+     * classifier. Returns a report keyed by the Spanish status name.
+     */
+    public Map<String, Long> countSalesByStatus() {
+        return saleDao.findAll().stream()
+                .collect(Collectors.groupingBy(
+                        sale -> sale.getStatusName() != null
+                                ? sale.getStatusName() : ("Estado " + sale.getStatusId()),
+                        Collectors.counting()));
     }
 
     /**
@@ -170,24 +209,37 @@ public class SalesController {
         sale.setStatusId(Sale.STATUS_IN_PREPARATION);
         sale.setRegisteredBy(user);
 
-        BigDecimal subtotal = BigDecimal.ZERO;
-        BigDecimal totalDiscount = BigDecimal.ZERO;
-        BigDecimal totalTax = BigDecimal.ZERO;
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (SaleDetail d : details) {
-            subtotal = subtotal.add(d.getSubtotal());
-            totalDiscount = totalDiscount.add(d.getDiscountAmount());
-            totalTax = totalTax.add(d.getTaxAmount());
-            totalAmount = totalAmount.add(d.getLineTotal());
-            sale.getDetails().add(d);
-        }
+        sale.getDetails().addAll(details);
+
+        // Stream API aggregation: each total is a reduce over the line items using a
+        // method reference to the relevant getter (replaces four accumulator loops).
+        BigDecimal subtotal = sumBy(details, SaleDetail::getSubtotal);
+        BigDecimal totalDiscount = sumBy(details, SaleDetail::getDiscountAmount);
+        BigDecimal totalTax = sumBy(details, SaleDetail::getTaxAmount);
+        BigDecimal totalAmount = sumBy(details, SaleDetail::getLineTotal);
+
         sale.setSubtotal(subtotal.setScale(2, RoundingMode.HALF_UP));
         sale.setTotalDiscount(totalDiscount.setScale(2, RoundingMode.HALF_UP));
         sale.setTotalTax(totalTax.setScale(2, RoundingMode.HALF_UP));
         sale.setTotalAmount(totalAmount.setScale(2, RoundingMode.HALF_UP));
 
         saleDao.create(sale);
+        AppLogger.info("Venta confirmada: " + sale.getSaleNumber() + " cliente=" + customerId
+                + " lineas=" + details.size() + " total=" + sale.getTotalAmount());
         return sale;
+    }
+
+    /**
+     * Generic Stream helper: sums a {@link BigDecimal} field extracted from each
+     * line with a {@link java.util.function.Function} (passed as a method
+     * reference), ignoring null values. Demonstrates functional composition.
+     */
+    private static BigDecimal sumBy(List<SaleDetail> details,
+                                    java.util.function.Function<SaleDetail, BigDecimal> field) {
+        return details.stream()
+                .map(field)
+                .filter(value -> value != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public List<Sale> listSales() {
@@ -227,10 +279,14 @@ public class SalesController {
                 InvoiceDocumentGenerator gen = InvoiceGeneratorFactory.create(fmt);
                 outputs.add(gen.generate(ctx, dir));
             } catch (Exception ex) {
+                AppLogger.error("Error al generar factura " + fmt
+                        + " para venta " + saleId, ex);
                 throw new RuntimeException("Error al generar factura "
                         + fmt + ": " + ex.getMessage(), ex);
             }
         }
+        AppLogger.info("Factura generada: " + invoice.getInvoiceNumber()
+                + " (venta " + sale.getSaleNumber() + ") archivos=" + outputs.size());
         return outputs;
     }
 

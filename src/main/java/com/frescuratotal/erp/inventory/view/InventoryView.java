@@ -12,6 +12,7 @@ import com.frescuratotal.erp.sales.model.Customer;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Console view for the inventory &amp; quality module (the central module).
@@ -35,8 +36,9 @@ public class InventoryView {
             System.out.println("7. Registrar merma manual");
             System.out.println("8. Trazabilidad de un lote");
             System.out.println("9. Ver registros de cuarentena / inspecciones / mermas");
+            System.out.println("10. Reporte de inventario (resumen con Stream API)");
             System.out.println("0. Volver al menu principal");
-            int option = ConsoleUtils.readInt("Seleccione una opcion: ", 0, 9);
+            int option = ConsoleUtils.readInt("Seleccione una opcion: ", 0, 10);
             try {
                 switch (option) {
                     case 1: registerReception(); break;
@@ -48,10 +50,13 @@ public class InventoryView {
                     case 7: waste(); break;
                     case 8: traceability(); break;
                     case 9: registries(); break;
+                    case 10: inventoryReport(); break;
                     case 0: back = true; break;
                     default: break;
                 }
             } catch (DaoException ex) {
+                com.frescuratotal.erp.common.AppLogger.error(
+                        "Error de BD en modulo Inventario", ex);
                 System.out.println("\n[ERROR DE BASE DE DATOS] " + ex.getMessage());
                 System.out.println("Verifique que MySQL este activo y la BD creada.");
                 ConsoleUtils.pause();
@@ -201,6 +206,39 @@ public class InventoryView {
                         w.getLotId(), w.getLostQuantity(), w.getReason());
             }
         }
+        ConsoleUtils.pause();
+    }
+
+    /**
+     * Inventory summary report built entirely from Stream-based aggregations in the
+     * controller (counts by status, near-expiry list, stock value and total waste).
+     */
+    private void inventoryReport() {
+        System.out.println("\n--- Reporte de inventario (resumen) ---");
+        System.out.println(">> Lotes por estado:");
+        Map<LotStatus, Long> byStatus = controller.countLotsByStatus();
+        if (byStatus.isEmpty()) {
+            System.out.println("   (sin lotes registrados)");
+        } else {
+            // forEach with a lambda over the report map.
+            byStatus.forEach((status, count) ->
+                    System.out.printf("   %-20s : %d lote(s)%n",
+                            status != null ? status.getDisplayName() : "Desconocido", count));
+        }
+
+        System.out.println(">> Lotes que vencen en los proximos 7 dias (orden FEFO):");
+        List<Lot> nearExpiry = controller.lotsExpiringWithin(7);
+        if (nearExpiry.isEmpty()) {
+            System.out.println("   (ninguno)");
+        } else {
+            nearExpiry.forEach(l ->
+                    System.out.printf("   [%d] %s | Vence: %s | Cant: %s%n",
+                            l.getId(), l.getLotNumber(), l.getExpirationDate(), l.getQuantity()));
+        }
+
+        System.out.printf(">> Valor total del inventario (precio venta x cantidad): $%s%n",
+                controller.totalStockValue());
+        System.out.printf(">> Total de unidades en merma: %s%n", controller.totalWasteUnits());
         ConsoleUtils.pause();
     }
 }

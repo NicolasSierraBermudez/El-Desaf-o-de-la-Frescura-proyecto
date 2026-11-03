@@ -1,5 +1,6 @@
 package com.frescuratotal.erp;
 
+import com.frescuratotal.erp.common.AppLogger;
 import com.frescuratotal.erp.common.ConsoleUtils;
 import com.frescuratotal.erp.common.DaoException;
 import com.frescuratotal.erp.common.DatabaseConfig;
@@ -23,6 +24,7 @@ public final class Main {
 
     public static void main(String[] args) {
         printBanner();
+        AppLogger.info("Aplicacion ERP Frescura Total iniciada.");
         boolean exit = false;
         while (!exit) {
             System.out.println("\n==================================================");
@@ -45,6 +47,7 @@ public final class Main {
                 }
             } catch (DaoException ex) {
                 // Safety net in case a view does not catch a persistence error.
+                AppLogger.error("Error de base de datos en el menu principal", ex);
                 System.out.println("\n[ERROR DE BASE DE DATOS] " + ex.getMessage());
                 System.out.println("No se pudo conectar a MySQL. Revise que el servidor este");
                 System.out.println("activo y que la base de datos exista. Credenciales en:");
@@ -52,10 +55,12 @@ public final class Main {
                 System.out.println("  URL actual: " + DatabaseConfig.getJdbcUrl());
                 ConsoleUtils.pause();
             } catch (RuntimeException ex) {
+                AppLogger.error("Error inesperado en el menu principal", ex);
                 System.out.println("\n[ERROR INESPERADO] " + ex.getMessage());
                 ConsoleUtils.pause();
             }
         }
+        AppLogger.info("Aplicacion ERP Frescura Total finalizada.");
         System.out.println("\nGracias por usar ERP Frescura Total. Hasta pronto.");
     }
 

@@ -37,6 +37,7 @@ bin/
 
 # ===== Runtime-generated output =====
 invoices/
+logs/
 *.log
 
 # ===== OS files =====
